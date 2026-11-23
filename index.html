@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Christmas gift budget calculator: budget per person and weekly savings (free)</title>
+<meta name="description" content="Free Christmas gift budget calculator: split one total across the people on your list by weight (close family, friends, colleagues) in round amounts that add up exactly, track planned against spent per person, add food, decorations, cards and postage, and see what to set aside each week until your last shopping day. Runs in your browser.">
+<style>
+:root{--ink:#1d1a24;--paper:#f3efe6;--navy:#23395b;--rust:#b2542b;--rule:#d8d0bd}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 Georgia,"Iowan Old Style",serif}
+main{max-width:800px;margin:0 auto;padding:36px 18px 60px}
+h1{font-size:1.9rem;line-height:1.15;margin:0 0 .4em;color:var(--navy)}
+h2{font-size:1.2rem;margin:1.8em 0 .5em;color:var(--navy)}
+a{color:var(--navy)}
+.box{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px}
+.itm{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 34px;gap:8px;margin-bottom:8px;align-items:end}
+.fund{display:grid;grid-template-columns:2fr 1.2fr 1.2fr 34px;gap:8px;margin-bottom:8px;align-items:end}
+.itm label,.fund label,.row label{font-size:.85rem;display:flex;flex-direction:column;gap:3px;min-width:0}
+input,select{font:inherit;padding:7px;border:1px solid var(--rule);border-radius:5px;background:#fff;width:100%;min-width:0}
+.x{font:inherit;border:1px solid var(--rule);background:#fff;border-radius:5px;height:40px;cursor:pointer;color:var(--rust)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px}
+button.add,.dl button{font:inherit;font-weight:bold;padding:9px 14px;border:2px solid var(--navy);border-radius:6px;background:#fff;color:var(--navy);cursor:pointer}
+.dl{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.dl button.main{background:var(--navy);color:#fff}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.sum div{background:#fff;border-top:4px solid var(--rust);padding:10px 14px;border-radius:4px}
+.sum b{display:block;font-size:1.2rem;color:var(--navy)}
+.warn{background:#fbe9e1;border-left:4px solid var(--rust);padding:8px 12px;border-radius:4px;margin:10px 0}
+.res{width:100%;border-collapse:collapse;background:#fff;font-size:.93rem}
+.res th,.res td{border-bottom:1px solid var(--rule);padding:6px 8px;text-align:right}
+.res th:first-child,.res td:first-child{text-align:left}
+.scroll{overflow-x:auto}
+.ok{color:#2f6b3a;font-weight:bold}.bad{color:var(--rust);font-weight:bold}
+@media print{.box,.dl,.add,.np{display:none}body{background:#fff}}
+small{color:#5f5a66}
+@media(max-width:620px){.itm{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;padding-bottom:8px;border-bottom:1px solid var(--rule)}.itm label:first-child,.itm .x{grid-column:1/-1}.itm .x{height:34px}.itm{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 34px;gap:8px;margin-bottom:8px;align-items:end}
+.fund{grid-template-columns:1fr 1fr;padding-bottom:8px;border-bottom:1px solid var(--rule)}.fund label:first-child,.fund .x{grid-column:1/-1}.fund .x{height:34px}.res{font-size:.85rem}.res th,.res td{padding:5px 4px}}
+</style>
+<style>
+.itm{grid-template-columns:minmax(0,2fr) minmax(0,.8fr) minmax(0,1.1fr) minmax(0,1.1fr) 34px}
+@media(max-width:620px){.itm{grid-template-columns:1fr 1fr}}
+.res td.bad{color:var(--rust)}
+</style>
+<link rel="canonical" href="https://ricco020.github.io/christmas-gift-budget-calculator/">
+</head>
+<body>
+<main>
+<h1>Christmas gift budget calculator: budget per person and weekly savings</h1>
+<p>Most Christmas budgets start as one number ("500 this year") and fail one person at a time: the first gifts bought get a generous share, the last people on the list get what is left. Put the total and a weight for each person (3 for a partner or child, 1 for a colleague), and the calculator gives each line its share in round amounts that add up to the total exactly. Then enter what you actually spend, add the costs that are not gifts (dinner, decorations, cards, postage), and it shows what is still to pay and how much to set aside each week until your last shopping day.</p>
+<p class="np"><small>Prefer paper? The <a href="https://tidysheets.shop/p/christmas-holiday-planner">Christmas holiday planner printable</a> has a gift list with a budget per person.</small></p>
+<div class="box">
+<div class="row">
+<label>Total Christmas budget<input type="number" id="tot" min="0" step="1" value="600"></label>
+<label>Round shares to<select id="step"><option value="1">1</option><option value="5" selected>5</option><option value="10">10</option></select></label>
+<label>Already set aside<input type="number" id="saved" min="0" step="1" value="0"></label>
+<label>Last shopping day<input type="date" id="by"></label>
+</div>
+<p><b>People and costs</b> <small>(weight 0 = a cost you plan by hand, like dinner or postage)</small></p>
+<div id="its"></div>
+<button class="add" id="addi" type="button">+ Add a person or cost</button>
+<button class="add" id="split" type="button">Split the total by weight</button>
+</div>
+<div id="out"></div>
+<div class="dl"><button class="main" id="pr" type="button">Print the plan</button><button id="csv" type="button">Download the plan (CSV)</button></div>
+<h2>How the split by weight works</h2>
+<p>Each line gets total x its weight / the sum of all weights, in steps of the rounding you choose. Because shares are rounded down first, a few steps are left over. They go one by one to the lines that lost the most to rounding (on a tie, the line higher in the list), so the shares always add up to the total. If the total is not a multiple of the rounding step, the remainder below one step is shown as not assigned rather than hidden in someone's share. Lines with weight 0 keep the amount you typed, and the split covers what is left of the total after them.</p>
+<h2>How the weekly amount is counted</h2>
+<p>Still to pay is, for each line, planned minus spent. A line already over its plan counts as paid and is flagged in red, it does not lower the others. The money already set aside is taken off, and the rest is divided by the number of weeks (rounded up) between today and your last shopping day, rounded up to the cent. If that day has passed, the whole amount is due now. A total smaller than the sum of the plans is shown as over budget by that difference.</p>
+<h2>Limits</h2>
+<p>This is a plan, not a bank account: it does not see your card, prices or shipping cut-offs, and nothing leaves your browser (the list is kept in this browser's local storage). Currency is whatever you type.</p>
+<h2>Keep it on paper</h2>
+<p>The <a href="https://tidysheets.shop/p/christmas-holiday-planner">Christmas holiday planner printable</a> (5 USD, 5 pages, US Letter and A4) has the same gift list with a budget per person, a holiday budget page, a six-week countdown with tasks, a card and post list and a Christmas dinner page (menu, shopping and timing). Copy the shares from this tool onto the gift list. For the dates themselves, the free <a href="https://ricco020.github.io/christmas-countdown-ics/">Christmas countdown calendar</a> puts the task deadlines in your calendar app.</p>
+<p><small>More free planning tools: <a href="https://ricco020.github.io/">ricco020.github.io</a>. MIT licence, source on <a href="https://github.com/ricco020/christmas-gift-budget-calculator">GitHub</a>.</small></p>
+</main>
+<script src="core.js"></script>
+<script>
+(function(){
+var K='xmas-gift-budget-v1', its=document.getElementById('its'), out=document.getElementById('out');
+var D=[{n:'Partner',w:3,p:0,s:0},{n:'Child 1',w:3,p:0,s:0},{n:'Parents',w:2,p:0,s:0},{n:'Best friend',w:1,p:0,s:0},{n:'Christmas dinner',w:0,p:120,s:0},{n:'Cards and postage',w:0,p:30,s:0}];
+function c(v){return Math.round((parseFloat(v)||0)*100);}
+function f(x){return (x<0?'-':'')+(Math.abs(x)/100).toFixed(2);}
+function esc(t){return String(t).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+var st; try{st=JSON.parse(localStorage.getItem(K));}catch(e){}
+var now=new Date(), defBy=new Date(now.getFullYear(),11,20); if(now>defBy) defBy=new Date(now.getFullYear()+1,11,20);
+var fresh=!st;if(!st) st={tot:600,step:5,saved:0,by:iso(defBy),L:D};
+function row(l){var d=document.createElement('div');d.className='itm';
+d.innerHTML='<label>Person or cost<input class="n" value="'+esc(l.n)+'"></label><label>Weight<input class="w" type="number" min="0" step="1" value="'+l.w+'"></label><label>Planned<input class="p" type="number" min="0" step="0.01" value="'+l.p+'"></label><label>Spent so far<input class="s" type="number" min="0" step="0.01" value="'+l.s+'"></label><button class="x" type="button" aria-label="Remove">x</button>';
+d.querySelector('.x').onclick=function(){d.remove();calc();};its.appendChild(d);}
+function read(){var L=[];its.querySelectorAll('.itm').forEach(function(d){L.push({n:d.querySelector('.n').value,w:Math.max(0,parseInt(d.querySelector('.w').value)||0),p:parseFloat(d.querySelector('.p').value)||0,s:parseFloat(d.querySelector('.s').value)||0});});
+return {tot:parseFloat(document.getElementById('tot').value)||0,step:parseInt(document.getElementById('step').value)||1,saved:parseFloat(document.getElementById('saved').value)||0,by:document.getElementById('by').value||iso(defBy),L:L};}
+function split(){var s=read(),fixed=0,ws=[];s.L.forEach(function(l){if(l.w===0)fixed+=c(l.p);ws.push(l.w);});
+var r=XB.allocate(Math.max(0,c(s.tot)-fixed),ws,s.step*100),i=0;
+its.querySelectorAll('.itm').forEach(function(d,j){if(ws[j]>0)d.querySelector('.p').value=(r.amounts[j]/100).toFixed(2).replace(/\.00$/,'');});
+st.left=r.leftover;calc();}
+function calc(){var s=read();localStorage.setItem(K,JSON.stringify(s));
+var lines=s.L.map(function(l){return {planned:c(l.p),spent:c(l.s)};});
+var r=XB.summary(lines,c(s.tot),c(s.saved),iso(new Date()),s.by),ov={};r.over.forEach(function(i){ov[i]=1;});
+var h='<div class="sum"><div>Planned<b>'+f(r.planned)+'</b></div><div>Spent so far<b>'+f(r.spent)+'</b></div><div>Still to pay<b>'+f(r.leftToSpend)+'</b></div><div>Set aside each week<b>'+f(r.perWeek)+'</b><small>'+(r.weeks>0?r.weeks+' week'+(r.weeks>1?'s':'')+' to '+s.by:'last shopping day passed: due now')+'</small></div></div>';
+if(r.unallocated!==null&&r.unallocated<0)h+='<p class="warn">The plans add up to '+f(-r.unallocated)+' more than the total budget.</p>';
+else if(r.unallocated!==null&&r.unallocated>0)h+='<p><small>'+f(r.unallocated)+' of the total is not planned yet.</small></p>';
+if(r.over.length)h+='<p class="warn">'+r.over.length+' line'+(r.over.length>1?'s are':' is')+' over plan (in red).</p>';
+h+='<div class="scroll"><table class="res"><tr><th>Person or cost</th><th>Weight</th><th>Planned</th><th>Spent</th><th>Left</th></tr>';
+s.L.forEach(function(l,i){var p=lines[i].planned,sp=lines[i].spent;h+='<tr><td>'+esc(l.n)+'</td><td>'+l.w+'</td><td>'+f(p)+'</td><td>'+f(sp)+'</td><td'+(ov[i]?' class="bad"':'')+'>'+f(p-sp)+'</td></tr>';});
+out.innerHTML=h+'</table></div>';st=s;}
+document.getElementById('tot').value=st.tot;document.getElementById('step').value=st.step;document.getElementById('saved').value=st.saved;document.getElementById('by').value=st.by;
+st.L.forEach(row);if(fresh)split();
+document.querySelector('.box').addEventListener('input',calc);document.getElementById('step').onchange=calc;
+document.getElementById('addi').onclick=function(){row({n:'',w:1,p:0,s:0});calc();};
+document.getElementById('split').onclick=split;
+document.getElementById('pr').onclick=function(){window.print();};
+document.getElementById('csv').onclick=function(){var s=read(),t='name,weight,planned,spent,left\n';s.L.forEach(function(l){t+='"'+l.n.replace(/"/g,'""')+'",'+l.w+','+l.p+','+l.s+','+(c(l.p)-c(l.s))/100+'\n';});
+var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='christmas-gift-budget.csv';a.click();};
+calc();
+})();
+</script>
+</body>
+</html>
